@@ -4,6 +4,8 @@
 
 A playful 404 page component — the "404" digits follow your cursor with a parallax effect, while the "返回 (Go back)" button runs away from your cursor and trembles when cornered at the screen edge.
 
+**在线预览 / Live Demo**: <https://caizeming.github.io/playful-404/>
+
 ## 特性 / Features
 
 - ✨ 「404」数字随鼠标做分层视差位移
@@ -20,6 +22,8 @@ A playful 404 page component — the "404" digits follow your cursor with a para
 - `404.html` —— 与 `index.html` 内容一致，GitHub Pages 会自动把它当作自定义 404 页面
 
 部署到 GitHub Pages：仓库 `Settings → Pages → Source` 选择分支与根目录 `/` 保存即可。唯一外部资源是 Google Fonts 的 Space Grotesk 字体，加载失败会自动回退到系统字体，不影响使用。
+
+已部署在线预览：<https://caizeming.github.io/playful-404/>
 
 ## 依赖 / Dependencies
 
