@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>404</title>
+<meta name="description" content="一个可玩的 404 页面 —— 「404」数字跟随鼠标做视差位移，而「返回」按钮会躲着你的鼠标跑。" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #F2F0ED;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', 'Arial', sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .stage { position: relative; width: 480px; height: 480px; }
+  .digit-wrap { position: absolute; will-change: transform; }
+  .digit {
+    display: block;
+    font-weight: 500;
+    line-height: 0.8;
+    color: #000;
+    font-size: 300px;
+    opacity: 0;
+    animation: rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+  #dLeft { left: 0; bottom: 240px; }
+  #dRight { left: 308px; bottom: 240px; }
+  #dRight .digit { animation-delay: 0.08s; }
+  #dZero { left: 186px; bottom: 0; }
+  #dZero .digit { animation-delay: 0.16s; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .back {
+    position: fixed;
+    left: 0;
+    top: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+    will-change: transform;
+    z-index: 10;
+  }
+  .back:hover { opacity: 0.7; }
+  .back:focus-visible { opacity: 0.7; outline: none; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4); }
+
+  @media (max-width: 1023px) {
+    .stage { width: 340px; height: 340px; }
+    .digit { font-size: 200px; }
+    #dLeft { bottom: 160px; left: 0; }
+    #dRight { left: 206px; bottom: 160px; }
+    #dZero { left: 120px; bottom: 0; }
+  }
+  @media (max-width: 767px) {
+    .stage { width: 220px; height: 280px; }
+    .digit { font-size: 120px; }
+    #dLeft { bottom: 100px; left: 0; }
+    #dRight { left: 124px; bottom: 100px; }
+    #dZero { left: 72px; bottom: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .digit { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="digit-wrap" id="dLeft"><span class="digit">4</span></div>
+    <div class="digit-wrap" id="dRight"><span class="digit">4</span></div>
+    <div class="digit-wrap" id="dZero"><span class="digit">0</span></div>
+  </div>
+  <a class="back" id="back" href="/">返回</a>
+
+<script>
+(function () {
+  'use strict';
+  var dLeft = document.getElementById('dLeft');
+  var dRight = document.getElementById('dRight');
+  var dZero = document.getElementById('dZero');
+  var back = document.getElementById('back');
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var BTN_W = 36, BTN_H = 30;
+
+  // 数字视差：两组目标/显示值（远处用 0.4，近处用 0.35 系数）
+  var farX = 0, farY = 0, farTx = 0, farTy = 0;
+  var nearX = 0, nearY = 0, nearTx = 0, nearTy = 0;
+  // 按钮：目标位置（中心坐标）+ 平滑显示位置 + 抖动偏移
+  var bx = 0, by = 0, bxCur = 0, byCur = 0;
+  var tremY = 0, armed = false, pinned = false;
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  function render() {
+    dLeft.style.transform = 'translate3d(' + farX + 'px,' + farY + 'px,0)';
+    dRight.style.transform = 'translate3d(' + farX + 'px,' + farY + 'px,0)';
+    dZero.style.transform = 'translate3d(' + nearX + 'px,' + nearY + 'px,0)';
+    back.style.transform = 'translate3d(' + bxCur + 'px,' + (byCur + tremY) + 'px,0)';
+  }
+
+  function placeButton() {
+    bx = bxCur = window.innerWidth / 2 - BTN_W / 2;
+    by = byCur = window.innerHeight * 0.78;
+  }
+
+  function onMouseMove(e) {
+    farTx = (e.clientX - window.innerWidth / 2) * 0.4;
+    farTy = (e.clientY - window.innerHeight / 2) * 0.4;
+    nearTx = (e.clientX - window.innerWidth / 2) * 0.35;
+    nearTy = (e.clientY - window.innerHeight / 2) * 0.35;
+
+    var R = armed ? 500 : 120; // 触发一次后一直用大半径
+    var dx = e.clientX - (bx + BTN_W / 2);
+    var dy = e.clientY - (by + BTN_H / 2);
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist >= R || dist < 8) { pinned = false; return; }
+
+    armed = true;
+    var ax = Math.abs(dx) < 6 ? 0 : dx; // 分量死区
+    var ay = Math.abs(dy) < 6 ? 0 : dy;
+    if (ax === 0 && ay === 0) { pinned = false; return; }
+
+    var d = Math.sqrt(ax * ax + ay * ay) || 1;
+    var push = (1 - d / R) * 4000;
+    var idealNx = bx - (ax / d) * push;
+    var idealNy = by - (ay / d) * push;
+    var nx = clamp(idealNx, 6, window.innerWidth - BTN_W - 6);
+    var ny = clamp(idealNy, 6, window.innerHeight - BTN_H - 6);
+    bx = nx; by = ny;
+    pinned = (nx !== idealNx) || (ny !== idealNy); // 被边界截断 = 贴边
+  }
+
+  function reset() { farTx = farTy = nearTx = nearTy = 0; }
+
+  function tick() {
+    farX += (farTx - farX) * 0.18;
+    farY += (farTy - farY) * 0.18;
+    nearX += (nearTx - nearX) * 0.18;
+    nearY += (nearTy - nearY) * 0.18;
+    bxCur += (bx - bxCur) * 0.32;
+    byCur += (by - byCur) * 0.32;
+    tremY = pinned ? (Math.random() - 0.5) * 2.4 : 0; // 贴边时高速抖动
+    render();
+    requestAnimationFrame(tick);
+  }
+
+  placeButton();
+  if (!reduceMotion) {
+    window.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseleave', reset);
+    window.addEventListener('resize', placeButton);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

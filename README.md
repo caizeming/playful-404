@@ -12,6 +12,15 @@ A playful 404 page component — the "404" digits follow your cursor with a para
 - ♿ 自动遵循 `prefers-reduced-motion`，减少动态效果
 - 📱 响应式，适配移动端
 
+## HTML 版（零依赖）/ Standalone HTML
+
+不依赖任何框架，直接用：
+
+- `index.html` —— 双击即可打开预览，也可作为 GitHub Pages 首页
+- `404.html` —— 与 `index.html` 内容一致，GitHub Pages 会自动把它当作自定义 404 页面
+
+部署到 GitHub Pages：仓库 `Settings → Pages → Source` 选择分支与根目录 `/` 保存即可。唯一外部资源是 Google Fonts 的 Space Grotesk 字体，加载失败会自动回退到系统字体，不影响使用。
+
 ## 依赖 / Dependencies
 
 - [motion](https://motion.dev/)（即 framer-motion 的 `motion` 包）
